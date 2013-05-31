@@ -10,6 +10,10 @@ namespace Tr8n
 {
     public class Tr8nBase
     {
+        #region Constants
+        public string API_VERSION_PATH = "/tr8n/api/v1/";
+        #endregion
+
         #region Member Variables
         private static MD5 m_md5HashGenerator = MD5.Create(); 
         #endregion
