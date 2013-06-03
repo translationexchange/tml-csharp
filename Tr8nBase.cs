@@ -77,6 +77,39 @@ namespace Tr8n
             return sData;
         }
 
+        /// <summary>
+        /// Returns the url data in a string
+        /// </summary>
+        /// <param name="sURL">URL to load</param>
+        /// <returns>The text returned by the requested url</returns>
+        protected static string GetHttpPagePost(string sURL, string paramData)
+        {
+            string sData = "";
+            try
+            {
+                // create the web request for the given url
+                HttpWebRequest objRequest = (HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
+                objRequest.Method = "POST";
+                objRequest.ContentType = "application/x-www-form-urlencoded";
+                byte[] data = Encoding.UTF8.GetBytes(paramData);
+                objRequest.ContentLength = data.Length;
+                Stream writeStream = objRequest.GetRequestStream();
+                writeStream.Write(data, 0, data.Length);
+                writeStream.Close();
+                // send the request and get the response
+                HttpWebResponse objResponse = (HttpWebResponse)objRequest.GetResponse();
+                // put the response in a string
+                StreamReader sr = new StreamReader(objResponse.GetResponseStream(), true);
+                sData = sr.ReadToEnd();
+                sr.Close();
+            }
+            // ignore exceptions
+            catch {}
+            return sData;
+        }
+
+
+
         #endregion
 
     }

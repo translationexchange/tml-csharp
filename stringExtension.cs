@@ -14,5 +14,12 @@ namespace Tr8n
         }
         #endregion
 
+        #region Methods
+        public static string tr(string label, params object[] items)
+        {
+            return new language().translate(label, items);
+        }
+        #endregion
+
     }
 }
