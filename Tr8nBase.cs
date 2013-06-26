@@ -108,6 +108,31 @@ namespace Tr8n
             return sData;
         }
 
+        /// <summary>
+        /// Returns the corresponding parameter as an object
+        /// </summary>
+        /// <param name="paramKey"></param>
+        /// <param name="items"></param>
+        /// <returns>Returns null if the param doesn't exist</returns>
+        public object GetParam(string paramKey, object[] items)
+        {
+            if (string.IsNullOrEmpty(paramKey) || items==null || items.Length<1)
+                return null;
+
+            // look for the key
+            for (int t = 0; t < items.Length; t++)
+            {
+                if (items[t] is string && (string)items[t] == paramKey)
+                {
+                    // found the token -- now grab the next item as the object if we aren't on the last item
+                    if (t < items.Length - 1)
+                        return items[t + 1];
+                }
+            }
+            return null;
+        }
+
+
 
 
         #endregion

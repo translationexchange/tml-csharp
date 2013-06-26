@@ -19,20 +19,8 @@ namespace Tr8n
         #region Methods
         public string translate(string label, params object[] items)
         {
-            string context = null;
+            string context = (string)GetParam(labelContextToken,items);
 
-            // look for a context
-            for (int t = 0; t < items.Length; t++)
-            {
-                if (items[t] is string && (string)items[t] == labelContextToken)
-                {
-                    // found the context token -- now grab the next item as the context if we aren't on the last item
-                    if (t < items.Length - 1)
-                    {
-                        context = (string)items[t + 1];
-                    }
-                }
-            }
             return new translationKey(label,context).translate(items);
         }
         #endregion

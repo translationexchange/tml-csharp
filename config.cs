@@ -10,10 +10,19 @@ namespace Tr8n
         #region Member Variables
         private string m_filename = null;
         private Dictionary<string, object> m_items = null;
+        private string m_mode = "default";
 
         #endregion
 
         #region Properties
+        public string this[string key,string defaultVal=""]
+        {
+            get
+            {
+                return GetString(key,defaultVal);
+            }
+        }
+
         public string filename
         {
             get { return m_filename== null ? "" : m_filename; }
@@ -28,6 +37,23 @@ namespace Tr8n
                 return m_items;
             }
         }
+
+        /// <summary>
+        /// The mode if the override settings to use in the config file.  By default, it is set to "default" which will use all the default settings
+        /// If the mode is set to something else (i.e. "dev") is will use that section of the config and fall back to default settings when dev settings don't exist.
+        /// </summary>
+        public string mode
+        {
+            get { return m_mode; }
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                    m_mode = "default";
+                else
+                    m_mode = value;
+            }
+        }
+
 
         #endregion
 
@@ -111,11 +137,26 @@ namespace Tr8n
             {
                 if (!Char.IsWhiteSpace(c))
                     break;
-                count++;
+                if (c == '\t')
+                    count += 4;
+                else
+                    count++;
             }
             return count;
         }
 
+
+        private bool GetDataObject(string key, out object data)
+        {
+            if (items.TryGetValue(mode + ":" + key, out data))
+                return true;
+            if (mode != "default")
+            {
+                if (items.TryGetValue("default:" + key, out data))
+                    return true;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Returns the config item for the given key.
@@ -125,7 +166,7 @@ namespace Tr8n
         public string GetString(string key, string defaultVal = "")
         {
             object data;
-            if (items.TryGetValue(key, out data))
+            if (GetDataObject(key,out data))
                 return (string)data;
             return defaultVal;
         }
@@ -138,7 +179,7 @@ namespace Tr8n
         public bool GetBool(string key, bool defaultVal = false)
         {
             object data;
-            if (items.TryGetValue(key, out data))
+            if (GetDataObject(key, out data))
             {
                 string test = (string)data;
                 if (test == "1" || test == "true" || test == "yes")
@@ -156,7 +197,7 @@ namespace Tr8n
         public int GetInt(string key, int defaultVal = 0)
         {
             object data;
-            if (items.TryGetValue(key, out data))
+            if (GetDataObject(key, out data))
             {
                 try
                 {

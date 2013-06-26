@@ -4,14 +4,15 @@ using System.Text;
 
 namespace Tr8n
 {
-    public class client : Tr8nBase
+    public class Tr8nClient : Tr8nBase
     {
         #region Member Variables
-        private config m_config = null;
+        private static config m_config = null;
+        private static string m_defaultLanguage = null;
         #endregion
 
         #region Properties
-        public config config
+        public static config config
         {
             get
             {
@@ -21,6 +22,16 @@ namespace Tr8n
             }
         }
 
+        public static string defaultLanguage
+        {
+            get
+            {
+                if (m_defaultLanguage == null)
+                    m_defaultLanguage = Tr8nClient.config["local:current_locale", "en-US"];
+                return m_defaultLanguage;
+            }
+            set { m_defaultLanguage = value; }
+        }
         #endregion
 
         #region Methods
@@ -28,9 +39,16 @@ namespace Tr8n
         /// Sets the config file you are using
         /// </summary>
         /// <param name="configFile">Full file path and name of the config file</param>
-        public void SetConfig(string configFile)
+        /// <param name="mode">The mode of the config file (i.e. dev, staging, live, default) -- Uses default by default</param>
+        public static void SetConfig(string configFile, string mode = null)
         {
             m_config = new config(configFile);
+            m_config.mode = mode;
+        }
+
+        public static string translate(string label, params object[] items)
+        {
+            return new language().translate(label, items);
         }
         #endregion
 
