@@ -45,6 +45,7 @@
     <Compile Include="json.cs" />
     <Compile Include="language.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Shared.cs" />
     <Compile Include="source.cs" />
     <Compile Include="stringExtension.cs" />
     <Compile Include="Tr8nBase.cs" />

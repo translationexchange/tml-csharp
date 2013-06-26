@@ -8,7 +8,7 @@ namespace Tr8n
     {
         #region Member Variables
         private static config m_config = null;
-        private static string m_defaultLanguage = null;
+        private static string m_defaultLocale = null;
         #endregion
 
         #region Properties
@@ -22,15 +22,26 @@ namespace Tr8n
             }
         }
 
+        public static string defaultLocale
+        {
+            get
+            {
+                if (m_defaultLocale == null)
+                    m_defaultLocale = Tr8nClient.config["current_locale", "en-US"];
+                return m_defaultLocale;
+            }
+            set { m_defaultLocale = value; }
+        }
+
         public static string defaultLanguage
         {
             get
             {
-                if (m_defaultLanguage == null)
-                    m_defaultLanguage = Tr8nClient.config["local:current_locale", "en-US"];
-                return m_defaultLanguage;
+                if (defaultLocale.Length > 2)
+                    return defaultLocale.Substring(0, 2);
+                return defaultLocale;
             }
-            set { m_defaultLanguage = value; }
+            set { m_defaultLocale = value; }
         }
         #endregion
 
