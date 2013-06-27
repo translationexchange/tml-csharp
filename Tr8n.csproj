@@ -48,6 +48,10 @@
     <Compile Include="Shared.cs" />
     <Compile Include="source.cs" />
     <Compile Include="stringExtension.cs" />
+    <Compile Include="tokens\data.cs" />
+    <Compile Include="tokens\tokenBase.cs" />
+    <Compile Include="tokens\tokenList.cs" />
+    <Compile Include="tokens\transform.cs" />
     <Compile Include="Tr8nBase.cs" />
     <Compile Include="translation.cs" />
     <Compile Include="translationKey.cs" />

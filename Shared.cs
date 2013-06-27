@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Tr8n
 {
@@ -56,7 +57,37 @@ namespace Tr8n
 
     }
 
-    class Shared
+    public class Shared
     {
+        public static List<string> GetDataTokens(string label)
+        {
+            List<string> tokens=new List<string>();
+            Regex r = new Regex(@"(\{[^_:][\w]*(:[\w]+)?(::[\w]+)?\})");
+            MatchCollection matches=r.Matches(label);
+            if (matches.Count>0)
+            {
+                foreach (Match m in matches)
+                {
+                    for (int t=1;t<m.Groups.Count;t++)
+                        tokens.Add(m.Groups[t].Value);
+                }
+            }
+            return tokens;
+        }
+
+        public static List<string> GetTransformTokens(string label)
+        {
+            List<string> tokens = new List<string>();
+            Regex r = new Regex(@"(\{[^_:|][\w]*(:[\w]+)?(::[\w]+)?\s*\|\|?[^{^}]+\})");
+            MatchCollection matches = r.Matches(label);
+            if (matches.Count > 0)
+            {
+                foreach (Match m in matches)
+                    for (int t = 1; t < m.Groups.Count; t++)
+                        tokens.Add(m.Groups[t].Value);
+            }
+            return tokens;
+        }
+
     }
 }

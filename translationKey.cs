@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-
+using Tr8n.tokens;
 namespace Tr8n
 {
     public class translationKey : Tr8nBase
@@ -101,6 +101,17 @@ namespace Tr8n
         public string substituteTokens(string translatedLabel,ParamsDictionary pd)
         {
             // substitute data tokens
+            tokenList dataTokens = new tokenList("data", translatedLabel);
+            foreach (dataToken tok in dataTokens.tokens)
+            {
+                string replaceVal = "";
+                object data = pd.GetObject(tok.name);
+                if (data != null)
+                {
+                    replaceVal = data.ToString();
+                }
+                translatedLabel = translatedLabel.Replace(tok.tokenText, replaceVal);
+            }
 
             // substitute decoration tokens
 
