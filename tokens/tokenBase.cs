@@ -23,6 +23,7 @@ namespace Tr8n.tokens
             get { return m_tokenText == null ? "" : m_tokenText; }
         }
 
+
         public string name
         {
             get
