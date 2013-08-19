@@ -37,17 +37,21 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="client.cs" />
+    <Compile Include="application.cs" />
     <Compile Include="config.cs" />
+    <Compile Include="decorators\baseDecorator.cs" />
+    <Compile Include="decorators\htmlDecorator.cs" />
     <Compile Include="json.cs" />
     <Compile Include="language.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="rules\numeric.cs" />
     <Compile Include="rules\rulesBase.cs" />
-    <Compile Include="Shared.cs" />
+    <Compile Include="Util.cs" />
     <Compile Include="source.cs" />
     <Compile Include="stringExtension.cs" />
     <Compile Include="tokens\data.cs" />
@@ -55,6 +59,7 @@
     <Compile Include="tokens\tokenList.cs" />
     <Compile Include="tokens\transform.cs" />
     <Compile Include="Tr8nBase.cs" />
+    <Compile Include="Tr8nException.cs" />
     <Compile Include="translation.cs" />
     <Compile Include="translationKey.cs" />
     <Compile Include="translator.cs" />

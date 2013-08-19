@@ -36,7 +36,7 @@ namespace Tr8n.tokens
                     {
                         int pos = tokenText.IndexOfAny(m_nameEndingChars, 1);
                         if (pos > 1)
-                            m_name = tokenText.Substring(1, pos);
+                            m_name = tokenText.Substring(1, pos-1);
                         else
                             m_name = tokenText.Substring(1);
                         if (m_name.EndsWith("}"))

@@ -16,4 +16,11 @@ namespace Tr8n
         #endregion
 
     }
+
+    public class sourceKeyInterface
+    {
+        public string source { get; set; }
+        public List<translationKeyInterface> keys = new List<translationKeyInterface>();
+    }
+
 }

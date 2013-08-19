@@ -27,7 +27,7 @@ namespace Tr8n
             get
             {
                 if (m_defaultLocale == null)
-                    m_defaultLocale = Tr8nClient.config["current_locale", "en-US"];
+                    m_defaultLocale = application.config["current_locale", "en-US"];
                 return m_defaultLocale;
             }
             set { m_defaultLocale = value; }

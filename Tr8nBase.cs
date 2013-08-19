@@ -11,7 +11,7 @@ namespace Tr8n
     public class Tr8nBase
     {
         #region Constants
-        public string API_VERSION_PATH = "/tr8n/api/v1/";
+        public const string API_VERSION_PATH = "/tr8n/api/v1/";
         #endregion
 
         
@@ -23,6 +23,89 @@ namespace Tr8n
         #endregion
 
         #region Methods
+
+        public Tr8nBase(object[] attributes = null)
+        {
+            // attributes come in pairs of 2
+            if (attributes != null && attributes.Length>1)
+            {
+                for(int t=0;t<attributes.Length;t+=2)
+                {
+                    this.GetType().GetProperty((string)attributes[t]).SetValue(this, attributes[t + 1], null);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Calls the TR8N api with the given path and data params
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="dataParams"></param>
+        /// <returns>A json object with the results</returns>
+        public static json api(string path, string dataParams)
+        {
+            string url = string.Format("http://{0}/tr8n/api/{1}?client_id={2}", application.config["remote:host"], path,application.config["remote:client_id"]);
+            HttpStatusCode statusCode;
+            string data = GetHttpPagePost(url, dataParams,out statusCode);
+            return new json(data);
+        }
+
+        /// <summary>
+        /// Calls the TR8N api with the given path and data params
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="dataParams"></param>
+        /// <returns>A json object with the results</returns>
+        public static json apiGet(string path, string dataParams)
+        {
+            string url = string.Format("http://{0}/tr8n/api/{1}?client_id={2}", application.config["remote:host"], path, application.config["remote:client_id"]);
+            HttpStatusCode statusCode;
+            string data = GetHttpPage(url+"&"+dataParams, out statusCode,30000);
+            return new json(data);
+        }
+
+        /*
+        public static object executeRequest(string path, Dictionary<string,object> paramData, Dictionary<string, object> options=null)
+        {
+            if (paramData == null)
+                paramData=new Dictionary<string,object>();
+            if (options==null)
+                options=new Dictionary<string,object>();
+            string url = string.Format("{0}{1}{2}", options["host"], API_VERSION_PATH, path);
+            string postFields=Util.httpBuildQuery(paramData);
+            string resultData;
+            HttpStatusCode statusCode;
+
+            if (options["method"] == "POST")
+            {
+                resultData = GetHttpPagePost(url, postFields,out statusCode);
+            }
+            else
+            {
+                url += "?" + postFields;
+                resultData = GetHttpPage(url,out statusCode);
+            }
+            if (statusCode != HttpStatusCode.OK)
+                throw new Tr8nException("Got HTTP response: "+statusCode.ToString());
+            json data=new json(resultData);
+            if (data == null || data.GetField("error").Length > 0)
+                throw new Tr8nException("Data Error: " + data.GetField("error"));
+            return processResponse(data,options);
+        }
+         */
+
+        /*
+        public static object processResponse(json data, Dictionary<string, object> options)
+        {
+            if (data.GetField("results").Length > 0)
+            {
+                object 
+            }
+            if (data.GetField("class").Length == 0)
+                return data;
+
+        }
+        */
 
         /// <summary>
         /// Builds an md5 hash of the input string and returns it in lowercase
@@ -46,9 +129,10 @@ namespace Tr8n
         /// <param name="sURL">URL to load</param>
         /// <param name="timeoutInMilliseconds">Leave this at zero for no timeout</param>
         /// <returns>The text returned by the requested url, or empty string on error</returns>
-        public static string GetHttpPage(string sURL,int timeoutInMilliseconds=0)
+        public static string GetHttpPage(string sURL,out HttpStatusCode statusCode,int timeoutInMilliseconds=0)
         {
             string sData = "";
+            statusCode = HttpStatusCode.OK;
             try
             {
                 // create the web request for the given url
@@ -58,6 +142,7 @@ namespace Tr8n
                 objRequest.UserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1)";
                 // send the request and get the response
                 HttpWebResponse objResponse = (HttpWebResponse)objRequest.GetResponse();
+                statusCode = objResponse.StatusCode;
                 // put the response in a string
                 Encoding enc;
                 try
@@ -69,6 +154,7 @@ namespace Tr8n
                     enc = Encoding.UTF8;
                 }
                 StreamReader sr = new StreamReader(objResponse.GetResponseStream(), enc);
+                
                 sData = sr.ReadToEnd();
                 sr.Close();
             }
@@ -82,9 +168,10 @@ namespace Tr8n
         /// </summary>
         /// <param name="sURL">URL to load</param>
         /// <returns>The text returned by the requested url</returns>
-        protected static string GetHttpPagePost(string sURL, string paramData)
+        protected static string GetHttpPagePost(string sURL, string paramData, out HttpStatusCode statusCode)
         {
             string sData = "";
+            statusCode = HttpStatusCode.OK;
             try
             {
                 // create the web request for the given url
@@ -98,6 +185,7 @@ namespace Tr8n
                 writeStream.Close();
                 // send the request and get the response
                 HttpWebResponse objResponse = (HttpWebResponse)objRequest.GetResponse();
+                statusCode = objResponse.StatusCode;
                 // put the response in a string
                 StreamReader sr = new StreamReader(objResponse.GetResponseStream(), true);
                 sData = sr.ReadToEnd();
