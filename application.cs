@@ -14,10 +14,13 @@ namespace Tr8n
         private static string m_defaultLocale = null;
         private static application m_app = null;
         private static ConcurrentDictionary<string, translationKey> m_translationKeyCache = new ConcurrentDictionary<string, translationKey>();
+        
 
         private ConcurrentDictionary<string,Dictionary<string,translationKey>> m_missingKeysBySource=new ConcurrentDictionary<string,Dictionary<string,translationKey>>();
         private string m_currentLocale = null;
         private language m_currentLanguage = null;
+        private Tr8nCookie m_tr8nCookie = null;
+        private ParamsDictionary m_globalTranslationOptions = new ParamsDictionary();
 
         #endregion
 
@@ -29,6 +32,22 @@ namespace Tr8n
         private static List<language> m_languages = null;
         private static Dictionary<string, language> m_languagesByLocale = null;
         private static List<source> sources { get; set; }
+
+
+        public ParamsDictionary globalTranslationOptions
+        {
+            get { return m_globalTranslationOptions; }
+        }
+
+        public Tr8nCookie tr8nCookie
+        {
+            get
+            {
+                if (m_tr8nCookie == null)
+                    m_tr8nCookie = new Tr8nCookie();
+                return m_tr8nCookie;
+            }
+        }
 
         public static config config
         {
@@ -82,7 +101,7 @@ namespace Tr8n
                     foreach (language lan in languages)
                     {
                         if (!lanDict.ContainsKey(lan.locale))
-                            lanDict.Add(lan.locale, lan);
+                            lanDict.Add(lan.locale.ToLower(), lan);
                     }
                     m_languagesByLocale = lanDict;
                 }
@@ -96,13 +115,18 @@ namespace Tr8n
             {
                 if (m_languages != null)
                     return m_languages;
+
                 json j = apiGet("application/languages","");
                 List<language> list = new List<language>();
                 if (j != null)
                 {
+
                     foreach (Dictionary<string, object> item in j.GetFieldList("results"))
                     {
+
                         json jTemp = new json(item);
+                        if (!jTemp.GetFieldBool("enabled", false))
+                            continue;
                         language lan = new language(jTemp.GetField("locale").ToLower());
                         lan.englishName = jTemp.GetField("english_name");
                         lan.nativeName = jTemp.GetField("native_name");
@@ -139,7 +163,7 @@ namespace Tr8n
             get
             {
                 if (m_defaultLocale == null)
-                    m_defaultLocale = application.config["current_locale", "en-US"];
+                    m_defaultLocale = application.config["current_locale", "en-US"].ToLower();
                 return m_defaultLocale;
             }
             set { m_defaultLocale = value; }
@@ -235,6 +259,7 @@ namespace Tr8n
                 return false;
             if (languagesByLocale.ContainsKey(locale.ToLower()))
                 return true;
+
             return false;
         }
 

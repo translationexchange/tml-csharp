@@ -10,6 +10,7 @@ namespace Tr8n
     public class translationKey : Tr8nBase
     {
         #region Member Variables
+        private int m_id = 0;
         private string m_label=null;
         private string m_context = null;
         private string m_hashKey = null;
@@ -33,6 +34,11 @@ namespace Tr8n
         {
             get { return m_level; }
             set { m_level = value; }
+        }
+
+        public int id
+        {
+            get { return m_id; }
         }
 
         public string description
@@ -62,11 +68,14 @@ namespace Tr8n
                 m_isLoaded = true;
                 if (m_translations == null)
                     m_translations = new Dictionary<string, List<translation>>();
+                else
+                    m_translations.Clear();
                 json j = apiGet("translation_key", "key=" + hashKey);
                 line = 1;
                 if (j == null || j.GetField("error").Length > 0)
                     return false;
                 line = 2;
+                m_id = Util.Nzn(j.GetField("id"),0);
                 Dictionary<string, List<translation>> tList = new Dictionary<string, List<translation>>();
                 foreach (Dictionary<string, object> item in j.GetFieldList("translations"))
                 {
@@ -76,8 +85,10 @@ namespace Tr8n
                     translation trans = new translation(Util.Nzn(jTemp.GetField("id")), jTemp.GetField("label"), jTemp.GetField("locale"), Util.Nzn(jTemp.GetField("rank")));
                     line = 5;
                     List<translation> items;
-                    if (m_translations.TryGetValue(trans.locale, out items))
+                    if (tList.TryGetValue(trans.locale, out items))
+                    {
                         items.Add(trans);
+                    }
                     else
                     {
                         items = new List<translation>();
@@ -90,7 +101,7 @@ namespace Tr8n
             }
             catch (Exception ex)
             {
-                System.Diagnostics.EventLog.WriteEntry("Application","Line "+line+" error: "+ ex.Message);
+                System.Diagnostics.EventLog.WriteEntry("Application","Line "+line+": label="+label+": error: "+ ex.Message);
                 m_isLoaded = false;
             }
             return m_isLoaded;
@@ -202,10 +213,70 @@ namespace Tr8n
             // substitute tokens
             translatedLabel=substituteTokens(translatedLabel, pd);
 
-            // return decorated string
+            // decorate the string
+            translatedLabel = decorate(translatedLabel, pd);
 
+            // add inline if necessary
+            if (pd.GetBool("#inline", false))
+                translatedLabel = addInlineSpan(translatedLabel);
 
             return translatedLabel;
+        }
+
+        protected string decorate(string translatedLabel,ParamsDictionary pd)
+        {
+            if (pd.GetBool("#skip_decorations", false))
+                return translatedLabel;
+            // substitute decoration tokens
+            tokenList decTokens = new tokenList("decoration", translatedLabel);
+            string className;
+            string styleName;
+            string href;
+            foreach (decorationToken tok in decTokens.tokens)
+            {
+                switch (tok.name)
+                {
+                    case "bold":
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<strong>{0}</strong>",tok.tokenValue));
+                        break;
+                    case "italics":
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<em>{0}</em>", tok.tokenValue));
+                        break;
+                    case "quote":
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("\"{0}\"", tok.tokenValue));
+                        break;
+                    case "squote":
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("'{0}'", tok.tokenValue));
+                        break;
+                    case "span":
+                        className = pd.GetString("class");
+                        if (className.Length > 0)
+                            className = "class=\"" + className + "\" ";
+                        styleName = pd.GetString("style");
+                        if (styleName.Length > 0)
+                            styleName = "style=\"" + styleName + "\" ";
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<span {0}{1}>{2}</span>",className,styleName, tok.tokenValue));
+                        break;
+                    case "link":
+                        className = pd.GetString("class");
+                        if (className.Length > 0)
+                            className = "class=\"" + className + "\" ";
+                        styleName = pd.GetString("style");
+                        if (styleName.Length > 0)
+                            styleName = "style=\"" + styleName + "\" ";
+                        href = "href=\""+pd.GetString("href")+"\" ";
+                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<a {0}{1}{2}>{3}</a>",href,className,styleName, tok.tokenValue));
+                        break;
+                }
+    
+            }
+
+            return translatedLabel;
+        }
+
+        protected string addInlineSpan(string label)
+        {
+            return string.Format("<span class=\"tr8n_translatable tr8n_{0}translated\" translation_key_id=\"{1}\">{2}</span>",hasTranslations(locale) ? "" : "not_",id,label);
         }
 
         public translation firstValidTranslation(string locale,ParamsDictionary tokenValues=null)

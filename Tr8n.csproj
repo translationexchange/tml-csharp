@@ -51,6 +51,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="rules\numeric.cs" />
     <Compile Include="rules\rulesBase.cs" />
+    <Compile Include="tokens\decoration.cs" />
+    <Compile Include="Tr8nCookie.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="source.cs" />
     <Compile Include="stringExtension.cs" />

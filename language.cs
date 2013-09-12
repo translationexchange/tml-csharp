@@ -47,11 +47,22 @@ namespace Tr8n
             set { m_locale = value; }
         }
 
+        public string localeProperCase
+        {
+            get
+            {
+                int pos = locale.IndexOf('-');
+                if (pos == -1 || pos==locale.Length-1)
+                    return locale;
+                return string.Format("{0}-{1}", locale.Substring(0, pos), locale.Substring(pos + 1).ToUpper());
+            }
+        }
+
         public string flagUrl
         {
             get
             {
-                return string.Format("http://{0}/assets/tr8n/flags/{1}.png",application.host,locale);
+                return string.Format("http://{0}/assets/tr8n/flags/{1}.png",application.host,localeProperCase);
             }
         }
 
@@ -86,8 +97,11 @@ namespace Tr8n
 
         public string translate(string label, ParamsDictionary pd)
         {
+            // add in global translation options -- local options always take precedence
             string context = pd.GetString(labelContextToken);
-            locale = pd.GetString("locale");
+            string testLocale = pd.GetString("locale");
+            if (!string.IsNullOrEmpty(testLocale))
+                locale = testLocale;
 
             translationKey tempKey = new translationKey(locale, label, context);
             translationKey realKey;
@@ -98,9 +112,19 @@ namespace Tr8n
                 {
                     // key isn't even registered, so register it now
                     application.app.registerMissingKey(tempKey, pd.GetString("source"));
+                }
+                application.translationKeyCache.TryAdd(tempKey.hashKey, tempKey);
+                realKey = tempKey;
+            }
+            else
+            {
+                // for inline translations, also reload the key from the server
+                if (pd.GetBool("#inline", false))
+                {
+                    realKey.LoadKey();
                     application.translationKeyCache.TryAdd(tempKey.hashKey, tempKey);
                 }
-                realKey = tempKey;
+
             }
 
             return realKey.translate(locale, pd);

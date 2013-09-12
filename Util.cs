@@ -37,6 +37,37 @@ namespace Tr8n
             }
         }
 
+        /// <summary>
+        /// grab the parameters in order from the tokens in the label
+        /// </summary>
+        /// <param name="label"></param>
+        /// <param name="items"></param>
+ 
+        public ParamsDictionary(string label,params object[] items)
+        {
+            if (items != null || items.Length > 0)
+            {
+                List<string> token = Util.GetDataTokens(label);
+
+                for (int t = 0; t < token.Count; t++)
+                {
+                    // looks for pairs of items
+                    if (items.Length >= t)
+                    {
+                        try
+                        {
+                            dict.Add(token[t].Replace("{","").Replace("}",""), items[t]);
+                        }
+                        catch
+                        {
+                            // ignore duplicates 
+                        }
+                    }
+                }
+            }
+        }
+
+
         public void Add(string paramKey, object obj)
         {
             try
@@ -136,8 +167,11 @@ namespace Tr8n
             {
                 foreach (Match m in matches)
                 {
-                    for (int t=1;t<m.Groups.Count;t++)
-                        tokens.Add(m.Groups[t].Value);
+                    for (int t = 1; t < m.Groups.Count; t++)
+                    {
+                        if (!string.IsNullOrEmpty(m.Groups[t].Value))
+                            tokens.Add(m.Groups[t].Value);
+                    }
                 }
             }
             return tokens;
@@ -152,7 +186,10 @@ namespace Tr8n
             {
                 foreach (Match m in matches)
                     for (int t = 1; t < m.Groups.Count; t++)
-                        tokens.Add(m.Groups[t].Value);
+                    {
+                        if (!string.IsNullOrEmpty(m.Groups[t].Value))
+                            tokens.Add(m.Groups[t].Value);
+                    }
             }
             return tokens;
         }

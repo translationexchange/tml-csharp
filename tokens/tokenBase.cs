@@ -10,10 +10,11 @@ namespace Tr8n.tokens
     public class tokenBase
     {
         #region Member Variables
-        private string m_tokenText = null;
-        private string m_name = null;
+        protected string m_tokenText = null;
+        protected string m_name = null;
+        protected string m_tokenValue = null;
 
-        private static char[] m_nameEndingChars = {':','|','}' }; 
+        protected static char[] m_nameEndingChars = { ':', '|', '}' }; 
 
         #endregion
 
@@ -47,6 +48,15 @@ namespace Tr8n.tokens
                 return m_name;
             }
         }
+
+        public virtual string tokenValue
+        {
+            get
+            {
+                return m_tokenValue == null ? "" : m_tokenValue;
+            }
+        }
+
         #endregion
 
         #region Methods

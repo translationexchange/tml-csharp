@@ -11,6 +11,8 @@ namespace Tr8n.tokens
         #region Constants
         public static Regex regexData = new Regex(@"(\{[^_:][\w]*(:[\w]+)?(::[\w]+)?\})", RegexOptions.Compiled);
         public static Regex regexTransform = new Regex(@"(\{[^_:|][\w]*(:[\w]+)?(::[\w]+)?\s*\|\|?[^{^}]+\})", RegexOptions.Compiled);
+        public static Regex regexDecoration = new Regex(@"(\[\w+:[^\]]+\])", RegexOptions.Compiled);
+        
         #endregion
 
         #region Member Variables
@@ -34,6 +36,9 @@ namespace Tr8n.tokens
                     break;
                 case "transform":
                     m_tokens = GetTokens(typeof(transformToken), regexTransform, tml);
+                    break;
+                case "decoration":
+                    m_tokens = GetTokens(typeof(decorationToken), regexDecoration, tml);
                     break;
                 default:
                     m_tokens = new List<tokenBase>();
