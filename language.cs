@@ -98,35 +98,44 @@ namespace Tr8n
         public string translate(string label, ParamsDictionary pd)
         {
             // add in global translation options -- local options always take precedence
+            bool isInline = pd.GetBool("#inline", false);
             string context = pd.GetString(labelContextToken);
+            string sourceKey = pd.GetString("source");
             string testLocale = pd.GetString("locale");
             if (!string.IsNullOrEmpty(testLocale))
                 locale = testLocale;
 
+            if (isInline)
+            {
+                // make sure the source is cached first
+                if (!string.IsNullOrEmpty(sourceKey))
+                {
+                    source pageSource = new source(sourceKey, locale, pd.GetString("#inlineid", ""));
+                    pageSource.Load();
+                }
+            }
+
             translationKey tempKey = new translationKey(locale, label, context);
             translationKey realKey;
             // is the key in the cache?
-            if (!application.translationKeyCache.TryGetValue(tempKey.hashKey, out realKey))
+            if (isInline)
             {
-                if (!tempKey.LoadKey())
+                if (!application.translationKeyCacheInline.TryGetValue(tempKey.hashKey, out realKey))
                 {
-                    // key isn't even registered, so register it now
                     application.app.registerMissingKey(tempKey, pd.GetString("source"));
+                    realKey = tempKey;
                 }
-                application.translationKeyCache.TryAdd(tempKey.hashKey, tempKey);
-                realKey = tempKey;
             }
             else
             {
-                // for inline translations, also reload the key from the server
-                if (pd.GetBool("#inline", false))
+                if (!application.translationKeyCache.TryGetValue(tempKey.hashKey, out realKey))
                 {
-                    realKey.LoadKey();
-                    application.translationKeyCache.TryAdd(tempKey.hashKey, tempKey);
+                    //tempKey.LoadKey();
+                    //application.translationKeyCache.TryAdd(tempKey.hashKey, tempKey);
+                    realKey = tempKey;
                 }
-
             }
-
+            
             return realKey.translate(locale, pd);
         }
 

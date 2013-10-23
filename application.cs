@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Web.Script.Serialization;
 using System.Collections.Concurrent;
 
@@ -14,7 +15,8 @@ namespace Tr8n
         private static string m_defaultLocale = null;
         private static application m_app = null;
         private static ConcurrentDictionary<string, translationKey> m_translationKeyCache = new ConcurrentDictionary<string, translationKey>();
-        
+        private static ConcurrentDictionary<string, translationKey> m_translationKeyCacheInline = new ConcurrentDictionary<string, translationKey>();
+        private static string m_loadedLanguageFile = null;
 
         private ConcurrentDictionary<string,Dictionary<string,translationKey>> m_missingKeysBySource=new ConcurrentDictionary<string,Dictionary<string,translationKey>>();
         private string m_currentLocale = null;
@@ -85,6 +87,11 @@ namespace Tr8n
             get { return m_translationKeyCache; }
         }
 
+        public static ConcurrentDictionary<string, translationKey> translationKeyCacheInline
+        {
+            get { return m_translationKeyCacheInline; }
+        }
+
         public static application app
         {
             get { return m_app; }
@@ -125,8 +132,6 @@ namespace Tr8n
                     {
 
                         json jTemp = new json(item);
-                        if (!jTemp.GetFieldBool("enabled", false))
-                            continue;
                         language lan = new language(jTemp.GetField("locale").ToLower());
                         lan.englishName = jTemp.GetField("english_name");
                         lan.nativeName = jTemp.GetField("native_name");
@@ -216,6 +221,62 @@ namespace Tr8n
             return new language().translate(label, items);
         }
 
+        public static void LoadLanguageTranslationFile(string filename,bool forceReload=false)
+        {
+            if (filename == m_loadedLanguageFile && forceReload == false)
+                return;
+            System.Diagnostics.EventLog.WriteEntry("Application", "LoadLanguageFile:"+filename);
+
+            translationKeyCache.Clear();
+            m_loadedLanguageFile = filename;
+            StreamReader sr = new StreamReader(filename);
+            while (true)
+            {
+                string line = sr.ReadLine();
+                if (line == null)
+                    break;
+                if (line.Length < 1)
+                    continue;
+                try
+                {
+                    json jSource = new json(line);
+                    translationKey k = new translationKey("", jSource.GetField("label"), jSource.GetField("description"));
+                    k.id = Util.Nzn(jSource.GetField("id"), 0);
+
+                    Dictionary<string, List<translation>> tList = new Dictionary<string, List<translation>>();
+                    // only do the languages we are supporting right now
+                    foreach (language lan in application.languages)
+                    {
+                        // don't store any english translations
+                        if (lan.locale.StartsWith("en"))
+                            continue;
+                        foreach (Dictionary<string, object> item in jSource.GetFieldList("translations:" + lan.localeProperCase))
+                        {
+                            json jTemp = new json(item);
+                            translation trans = new translation(Util.Nzn(jTemp.GetField("id")), jTemp.GetField("label"), lan.locale, Util.Nzn(jTemp.GetField("rank")));
+                            List<translation> items;
+                            if (tList.TryGetValue(trans.locale, out items))
+                            {
+                                items.Add(trans);
+                            }
+                            else
+                            {
+                                items = new List<translation>();
+                                items.Add(trans);
+                                tList.Add(trans.locale, items);
+                            }
+                        }
+                        k.translations = tList;
+                    }
+                    application.translationKeyCache.TryAdd(k.hashKey, k);
+                }
+                catch { }
+            }
+            sr.Close();
+            System.Diagnostics.EventLog.WriteEntry("Application", "LanguageFileLoaded:"+application.translationKeyCache.Count+" items" );
+
+        }
+
         public void registerMissingKey(translationKey transKey, string source = null)
         {
             if (string.IsNullOrEmpty(source))
@@ -241,14 +302,19 @@ namespace Tr8n
             List<sourceKeyInterface> list = new List<sourceKeyInterface>();
             foreach (KeyValuePair<string, Dictionary<string, translationKey>> kvp in m_missingKeysBySource)
             {
+                if (kvp.Value.Count < 1)
+                    continue;
                 sourceKeyInterface ski = new sourceKeyInterface();
                 ski.source = kvp.Key;
                 foreach (KeyValuePair<string, translationKey> tkey in kvp.Value)
                     ski.keys.Add(tkey.Value.toInterface);
                 list.Add(ski);
             }
-            string data = new JavaScriptSerializer().Serialize(list);
-            json j=api("source/register_keys", string.Format("source_keys={0}",System.Web.HttpUtility.UrlEncode(data)));
+            if (list.Count > 0)
+            {
+                string data = new JavaScriptSerializer().Serialize(list);
+                json j = api("source/register_keys", string.Format("source_keys={0}", System.Web.HttpUtility.UrlEncode(data)));
+            }
 
             m_missingKeysBySource.Clear();
         }

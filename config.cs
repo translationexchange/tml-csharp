@@ -67,6 +67,11 @@ namespace Tr8n
             Load(configFilePath);
         }
 
+        public void Reload()
+        {
+            Load(null);
+        }
+
         /// <summary>
         /// Loads the current config file or one that you send in and makes it the current config
         /// </summary>
@@ -74,6 +79,7 @@ namespace Tr8n
         /// <returns>true is the config is loaded successfully, else false</returns>
         public bool Load(string configFilePath = null)
         {
+            items.Clear();
             if (configFilePath != null)
                 m_filename = configFilePath;
 

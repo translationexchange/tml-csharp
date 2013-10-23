@@ -10,6 +10,7 @@ namespace Tr8n
     public class ParamsDictionary
     {
         public Dictionary<string, object> dict = new Dictionary<string, object>();
+        public List<string> attributes = new List<string>();                // Attributes need to stay in the order they are listed for applying them in decorations
 
         public ParamsDictionary()
         {
@@ -24,6 +25,12 @@ namespace Tr8n
                     // looks for pairs of items
                     if (items.Length > t)
                     {
+                        try
+                        {
+                            if (((string)items[t]) == "attr" || ((string)items[t]) == "attributes")
+                                attributes.Add((string)items[t + 1]);
+                        }
+                        catch { }
                         try
                         {
                             dict.Add((string)items[t], items[t + 1]);

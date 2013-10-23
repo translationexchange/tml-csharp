@@ -16,10 +16,24 @@ namespace Tr8n
 
         
         #region Member Variables
-        private static MD5 m_md5HashGenerator = MD5.Create(); 
+        private static MD5 m_md5HashGenerator = MD5.Create();
+        private static UptimeMonitor m_tr8nMonitor=null;
         #endregion
 
         #region Properties
+        public static UptimeMonitor tr8nMonitor
+        {
+            get
+            {
+                if (m_tr8nMonitor == null)
+                {
+                    UptimeMonitor u = new UptimeMonitor(application.config.GetInt("remote:failure_count", 3), application.config.GetInt("remote:failure_window_in_seconds", 60), application.config.GetInt("remote:failure_reattempt_after_seconds", 120));
+                    m_tr8nMonitor = u;
+                }
+                return m_tr8nMonitor;
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -44,9 +58,14 @@ namespace Tr8n
         /// <returns>A json object with the results</returns>
         public static json api(string path, string dataParams)
         {
+            System.Diagnostics.EventLog.WriteEntry("Application", "API:" + path + "?" + dataParams);
+            if (!tr8nMonitor.shouldAttempt)
+                return new json("");
             string url = string.Format("http://{0}/tr8n/api/{1}?client_id={2}", application.config["remote:host"], path,application.config["remote:client_id"]);
             HttpStatusCode statusCode;
-            string data = GetHttpPagePost(url, dataParams,out statusCode);
+            string data = GetHttpPagePost(url, dataParams, out statusCode, application.config.GetInt("remote:host_timeout_ms", 5000));
+            if (string.IsNullOrEmpty(data))
+                tr8nMonitor.BadResponse();
             return new json(data);
         }
 
@@ -56,12 +75,33 @@ namespace Tr8n
         /// <param name="path"></param>
         /// <param name="dataParams"></param>
         /// <returns>A json object with the results</returns>
-        public static json apiGet(string path, string dataParams)
+        public static json apiGet(string path, string dataParams,int timeoutInMS=0)
         {
+            return new json(apiGetString(path,dataParams,timeoutInMS));
+        }
+
+        /// <summary>
+        /// Calls the TR8N api with the given path and data params
+        /// </summary>
+        /// <param name="path"></param>
+        /// <param name="dataParams"></param>
+        /// <returns>A json object with the results</returns>
+        public static string apiGetString(string path, string dataParams,int timeoutInMS=0)
+        {
+            System.Diagnostics.EventLog.WriteEntry("Application", "APIGet:" + path + "?" + dataParams);
+            if (!tr8nMonitor.shouldAttempt)
+                return "";
             string url = string.Format("http://{0}/tr8n/api/{1}?client_id={2}", application.config["remote:host"], path, application.config["remote:client_id"]);
             HttpStatusCode statusCode;
-            string data = GetHttpPage(url+"&"+dataParams, out statusCode,30000);
-            return new json(data);
+            int timeout;
+            if (timeoutInMS==0)
+                timeout=application.config.GetInt("remote:host_timeout_ms", 5000);
+            else
+                timeout=timeoutInMS;
+            string data = GetHttpPage(url + "&" + dataParams, out statusCode, timeout);
+            if (string.IsNullOrEmpty(data))
+                tr8nMonitor.BadResponse();
+            return data;
         }
 
         /*
@@ -144,22 +184,26 @@ namespace Tr8n
                 HttpWebResponse objResponse = (HttpWebResponse)objRequest.GetResponse();
                 statusCode = objResponse.StatusCode;
                 // put the response in a string
-                Encoding enc;
-                try
-                {
-                    enc = Encoding.GetEncoding(objResponse.CharacterSet);
-                }
-                catch
-                {
-                    enc = Encoding.UTF8;
-                }
+                Encoding enc=Encoding.UTF8;
+                //try
+                //{
+                //    enc = Encoding.GetEncoding(objResponse.CharacterSet);
+                //}
+                //catch
+                //{
+                //    enc = Encoding.UTF8;
+                //}
                 StreamReader sr = new StreamReader(objResponse.GetResponseStream(), enc);
                 
                 sData = sr.ReadToEnd();
                 sr.Close();
             }
             // ignore exceptions
-            catch { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.EventLog.WriteEntry("Application", "GetHttpPageException:" +sURL+":"+ ex.Message);
+            }
+
             return sData;
         }
 
@@ -168,7 +212,7 @@ namespace Tr8n
         /// </summary>
         /// <param name="sURL">URL to load</param>
         /// <returns>The text returned by the requested url</returns>
-        protected static string GetHttpPagePost(string sURL, string paramData, out HttpStatusCode statusCode)
+        protected static string GetHttpPagePost(string sURL, string paramData, out HttpStatusCode statusCode, int timeoutInMilliseconds = 0)
         {
             string sData = "";
             statusCode = HttpStatusCode.OK;
@@ -176,6 +220,7 @@ namespace Tr8n
             {
                 // create the web request for the given url
                 HttpWebRequest objRequest = (HttpWebRequest)System.Net.HttpWebRequest.Create(sURL);
+                objRequest.Timeout = timeoutInMilliseconds;
                 objRequest.Method = "POST";
                 objRequest.ContentType = "application/x-www-form-urlencoded";
                 byte[] data = Encoding.UTF8.GetBytes(paramData);
@@ -192,7 +237,10 @@ namespace Tr8n
                 sr.Close();
             }
             // ignore exceptions
-            catch {}
+            catch (Exception ex)
+            {
+                System.Diagnostics.EventLog.WriteEntry("Application", "GetHttpPagePostException:" +sURL+":"+paramData+":"+ ex.Message);
+            }
             return sData;
         }
 

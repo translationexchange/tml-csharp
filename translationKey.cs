@@ -39,6 +39,7 @@ namespace Tr8n
         public int id
         {
             get { return m_id; }
+            set { m_id = value; }
         }
 
         public string description
@@ -114,12 +115,13 @@ namespace Tr8n
             {
                 if (m_translations != null)
                     return m_translations;
-                if (!m_isLoaded)
-                    LoadKey();
+                //if (!m_isLoaded)
+                //    LoadKey();
                 if (m_translations == null)
                     m_translations = new Dictionary<string, List<translation>>();
                 return m_translations;
             }
+            set { m_translations = value; }
         }
 
         public string locale
@@ -199,7 +201,7 @@ namespace Tr8n
             if (application.config.GetBool("disabled"))
             {
                 // translations are turned off
-                return substituteTokens(label,pd);
+                return decorate(substituteTokens(label,pd),pd);
             }
 
             // take first valid translation
@@ -228,47 +230,83 @@ namespace Tr8n
             if (pd.GetBool("#skip_decorations", false))
                 return translatedLabel;
             // substitute decoration tokens
-            tokenList decTokens = new tokenList("decoration", translatedLabel);
+            tokenList decTokens;
             string className;
             string styleName;
+            string idName;
             string href;
-            foreach (decorationToken tok in decTokens.tokens)
+            string attributes;
+
+            int attributePos = 0;
+
+            while (true)
             {
-                switch (tok.name)
+                decTokens= new tokenList("decoration", translatedLabel);
+                if (decTokens.tokens.Count < 1)
+                    break;
+                foreach (decorationToken tok in decTokens.tokens)
                 {
-                    case "bold":
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<strong>{0}</strong>",tok.tokenValue));
-                        break;
-                    case "italics":
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<em>{0}</em>", tok.tokenValue));
-                        break;
-                    case "quote":
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("\"{0}\"", tok.tokenValue));
-                        break;
-                    case "squote":
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("'{0}'", tok.tokenValue));
-                        break;
-                    case "span":
-                        className = pd.GetString("class");
-                        if (className.Length > 0)
-                            className = "class=\"" + className + "\" ";
-                        styleName = pd.GetString("style");
-                        if (styleName.Length > 0)
-                            styleName = "style=\"" + styleName + "\" ";
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<span {0}{1}>{2}</span>",className,styleName, tok.tokenValue));
-                        break;
-                    case "link":
-                        className = pd.GetString("class");
-                        if (className.Length > 0)
-                            className = "class=\"" + className + "\" ";
-                        styleName = pd.GetString("style");
-                        if (styleName.Length > 0)
-                            styleName = "style=\"" + styleName + "\" ";
-                        href = "href=\""+pd.GetString("href")+"\" ";
-                        translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<a {0}{1}{2}>{3}</a>",href,className,styleName, tok.tokenValue));
-                        break;
+                    switch (tok.name)
+                    {
+                        case "bold":
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<strong>{0}</strong>", tok.tokenValue));
+                            break;
+                        case "italics":
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<em>{0}</em>", tok.tokenValue));
+                            break;
+                        case "quote":
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("\"{0}\"", tok.tokenValue));
+                            break;
+                        case "squote":
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("'{0}'", tok.tokenValue));
+                            break;
+                        case "span":
+                            className = pd.GetString("class");
+                            if (className.Length > 0)
+                                className = "class=\"" + className + "\" ";
+                            styleName = pd.GetString("style");
+                            if (styleName.Length > 0)
+                                styleName = "style=\"" + styleName + "\" ";
+                            idName= pd.GetString("id");
+                            if (idName.Length > 0)
+                                idName = "id=\"" + idName+ "\" ";
+                            if (pd.attributes.Count > attributePos)
+                                attributes = pd.attributes[attributePos++];
+                            else
+                                attributes = "";
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<span {0}{1}{2}{3}>{4}</span>",attributes,idName, className, styleName, tok.tokenValue));
+                            break;
+                        case "link":
+                            className = pd.GetString("class");
+                            if (className.Length > 0)
+                                className = "class=\"" + className + "\" ";
+                            styleName = pd.GetString("style");
+                            if (styleName.Length > 0)
+                                styleName = "style=\"" + styleName + "\" ";
+                            href = "href=\"" + pd.GetString("href") + "\" ";
+                            if (pd.attributes.Count > attributePos)
+                                attributes = pd.attributes[attributePos++];
+                            else
+                                attributes = "";
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<a {0}{1}{2}{3}>{4}</a>",attributes, href, className, styleName, tok.tokenValue));
+                            break;
+                        case "link1":
+                            className = pd.GetString("class1");
+                            if (className.Length > 0)
+                                className = "class=\"" + className + "\" ";
+                            styleName = pd.GetString("style1");
+                            if (styleName.Length > 0)
+                                styleName = "style=\"" + styleName + "\" ";
+                            href = "href=\"" + pd.GetString("href1") + "\" ";
+                            if (pd.attributes.Count > attributePos)
+                                attributes = pd.attributes[attributePos++];
+                            else
+                                attributes = "";
+                            translatedLabel = translatedLabel.Replace(tok.tokenText, string.Format("<a {0}{1}{2}{3}>{4}</a>",attributes, href, className, styleName, tok.tokenValue));
+                            break;
+                    }
+
                 }
-    
             }
 
             return translatedLabel;
@@ -276,7 +314,7 @@ namespace Tr8n
 
         protected string addInlineSpan(string label)
         {
-            return string.Format("<span class=\"tr8n_translatable tr8n_{0}translated\" translation_key_id=\"{1}\">{2}</span>",hasTranslations(locale) ? "" : "not_",id,label);
+            return string.Format("<span class=\"tr8n_translatable tr8n_{0}translated\" data-translation_key_id=\"{1}\">{2}</span>",hasTranslations(locale) ? "" : "not_",id,label);
         }
 
         public translation firstValidTranslation(string locale,ParamsDictionary tokenValues=null)
